@@ -59,7 +59,7 @@ public class TransparentApp : MonoBehaviour
         else
             SetWindowLong(GetActiveWindow(), -20, 524288 | 32);//GWL_EXSTYLE=-20; WS_EX_LAYERED=524288=&h80000, WS_EX_TRANSPARENT=32=0x00000020L
 
-        SetLayeredWindowAttributes(handle, 0, 51, 2);// Transparency=51=20%, LWA_ALPHA=2
+        SetLayeredWindowAttributes(handle, 0, 125, 2);// Transparency=51=20%, LWA_ALPHA=2
 
         SetWindowPos(handle, 0, 0, 0, fWidth, fHeight, 32 | 64); //SWP_FRAMECHANGED = 0x0020 (32); //SWP_SHOWWINDOW = 0x0040 (64)
         ShowWindowAsync(handle, 3); //Forces window to show in case of unresponsive app    // SW_SHOWMAXIMIZED(3)

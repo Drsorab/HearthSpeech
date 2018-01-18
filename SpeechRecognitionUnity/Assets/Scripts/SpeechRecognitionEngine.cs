@@ -44,8 +44,8 @@ public class SpeechRecognitionEngine : MonoBehaviour
         results.text = "You said: <b>" + word + "</b>";
     }
 
-    void HandleHand(int idx) {
-        GoForIt(hand[idx].position.x, hand[idx].position.y);
+    void HandleHand(int idx, bool check) {
+        GoForIt(hand[idx].position.x, hand[idx].position.y, !check);
     }
 
     private void Update()
@@ -53,28 +53,32 @@ public class SpeechRecognitionEngine : MonoBehaviour
         //var x = target.transform.position.x;
         //var y = target.transform.position.y;
 
-        if (word.Contains("hand"))
+        if (word.Contains("card") && !word.Contains("discard"))
         {
             int result = int.Parse(Regex.Match(word, @"\d+").Value);
-            HandleHand(result - 1);
+
+            HandleHand(result - 1, word.Contains("check"));
         }
-        else if (word.Contains("cards")) {
+        else if (word.Contains("formation"))
+        {
             int result = int.Parse(Regex.Match(word, @"\d+").Value);
             FixFormation(result - 1);
         }
         else if (word.Contains("discard"))
         {
             int result = int.Parse(Regex.Match(word, @"\d+").Value);
-            GoForIt(extras[result+3].position.x, extras[result+3].position.y);
+            GoForIt(extras[result + 3].position.x, extras[result + 3].position.y);
         }
         else if (word.Contains("friend"))
         {
             int result = int.Parse(Regex.Match(word, @"\d+").Value);
             float offset = 0;
             if (word.Contains("right"))
-                offset += (friendlyBoard[0].position.x + friendlyBoard[1].position.x)/2;
-            
-            GoForIt(friendlyBoard[result-1].position.x+offset, friendlyBoard[result -1].position.y);
+                offset += (friendlyBoard[result].position.x + friendlyBoard[result+1].position.x) / 2;
+            if (word.Contains("left"))
+                offset += (friendlyBoard[result].position.x + friendlyBoard[result - 1].position.x) / 2;
+
+            GoForIt(friendlyBoard[result - 1].position.x + offset, friendlyBoard[result - 1].position.y);
         }
         else if (word.Contains("enemy"))
         {
@@ -105,6 +109,8 @@ public class SpeechRecognitionEngine : MonoBehaviour
                 break;
             case "next":
                 GoForIt(extras[3].position.x, extras[3].position.y);
+                formation++;
+                FixFormation(formation);
                 break;
             case "me":
                 GoForIt(extras[0].position.x, extras[0].position.y);
@@ -115,13 +121,22 @@ public class SpeechRecognitionEngine : MonoBehaviour
             case "face":
                 GoForIt(extras[2].position.x, extras[2].position.y);
                 break;
+            case "play":
+                GoForIt(extras[8].position.x, extras[8].position.y);
+                formation--;
+                FixFormation(formation);
+                break;
+            case "draw":
+                formation++;
+                FixFormation(formation);
+                break;
 
         }
         word = "";
         //target.transform.position = new Vector3(x, y, 0);
     }
 
-    void GoForIt(float x , float y) {
+    void GoForIt(float x , float y, bool clickit=true) {
         Win32.POINT p = new Win32.POINT();
         p.x = Convert.ToInt16(x);
         p.y = Convert.ToInt16(y);
@@ -129,12 +144,13 @@ public class SpeechRecognitionEngine : MonoBehaviour
         //Win32.ClientToScreen(this.Handle, ref p);
         Win32.SetCursorPos(p.x - 5, Screen.height - p.y + 25);
         lastPos = new Vector2(p.x - 5, Screen.height - p.y + 25);
-        StartCoroutine(MouseIt());
+        if(clickit)
+            StartCoroutine(MouseIt());
     }
 
     IEnumerator MouseIt() {
         Win32.LeftMouseClick((uint)lastPos.x, (uint)lastPos.y);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.2f);
         Win32.LeftMouseUp((uint)lastPos.x, (uint)lastPos.y);
     }
 
@@ -157,6 +173,11 @@ public class SpeechRecognitionEngine : MonoBehaviour
     }
 
     void FixFormation(int idx) {
+        if (formation >= 10)
+        {
+            formation = 10;
+            return;
+        }
         formation = idx;
         int count = 0;
         foreach (Transform t in hand) {
@@ -195,7 +216,7 @@ public class SpeechRecognitionEngine : MonoBehaviour
         count = 0;
         foreach (Transform t in extras)
         {        
-            if (transApp.loadedData.extra.Count > 0)
+            if (transApp.loadedData.extra.Count > 0 && count< transApp.loadedData.extra.Count)
                 t.position = new Vector3(transApp.loadedData.extra[count].x, transApp.loadedData.extra[count].y);
             else
                 break;
